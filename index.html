@@ -257,6 +257,85 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover{opacity:1}
 .yr-td{padding:10px 14px;font-size:13px;border-right:1px solid var(--border)}
 .yr-td:last-child{border-right:none}
 .yr-tbl-head .yr-td{font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.05em;background:var(--s2)}
+
+/* ══ Mobile Responsive ══ */
+@media (max-width: 768px) {
+  .app { flex-direction: column; height: auto; min-height: 100vh; }
+
+  /* Hide sidebar entirely on mobile */
+  .sb { display: none; }
+
+  /* Show mobile bottom nav */
+  #mobile-bottom-nav { display: flex !important; }
+
+  .main { overflow: visible; }
+  .topbar { height: 50px; padding: 0 14px; }
+  .scroll { padding: 12px 14px; padding-bottom: 72px; }
+
+  /* Hide desktop table, show mobile cards */
+  .tbl-wrap { display: none; }
+  #mobile-cards { display: block; }
+
+  /* Form layout */
+  .fg2, .fg3 { grid-template-columns: 1fr; }
+  .tg-grid { grid-template-columns: 1fr 1fr; }
+  .dur-row { grid-template-columns: 1fr; gap: 8px; }
+  .igrid { grid-template-columns: 1fr; }
+
+  /* Step bar */
+  .steps .step .sn { font-size: 16px; }
+  .steps .step { font-size: 11px; padding: 8px 4px; }
+
+  /* Stats */
+  #kpi-row { grid-template-columns: 1fr 1fr; }
+  #year-table .yr-tbl-row { grid-template-columns: 70px repeat(3,1fr); }
+}
+@media (min-width: 769px) {
+  #mobile-cards { display: none; }
+}
+
+/* ── Mobile patient cards ── */
+.m-card {
+  background: white; border: 1px solid var(--border);
+  border-radius: var(--r12); padding: 14px 16px;
+  margin-bottom: 10px; box-shadow: var(--sh);
+}
+.m-card-top { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.m-av { width: 38px; height: 38px; border-radius: 50%;
+  background: var(--bl); border: 1.5px solid var(--bb);
+  color: var(--blue); font-size: 16px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.m-av.teal { background: var(--tl); border-color: var(--tb); color: var(--teal); }
+.m-name { font-size: 16px; font-weight: 700; flex: 1; }
+.m-date { font-size: 12px; font-family: var(--mono); color: var(--t2); }
+.m-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.m-surgery { font-size: 12px; color: var(--t2); flex: 1; min-width: 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.m-actions { display: flex; gap: 8px; }
+.m-btn-edit { flex: 1; padding: 10px; background: var(--al);
+  border: 1px solid var(--ab); color: var(--amber); border-radius: var(--r8);
+  font-size: 14px; font-weight: 600; cursor: pointer; text-align: center;
+  font-family: var(--sans); }
+.m-btn-edit:active { background: var(--amber); color: white; }
+.m-btn-del { padding: 10px 16px; background: var(--rl);
+  border: 1px solid var(--rb); color: var(--red); border-radius: var(--r8);
+  font-size: 14px; font-weight: 600; cursor: pointer;
+  font-family: var(--sans); }
+.m-btn-del:active { background: var(--red); color: white; }
+.m-status { display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 500; }
+
+/* ── Mobile bottom nav ── */
+.mob-tab {
+  flex: 1; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 3px; padding: 8px 4px 10px;
+  border: none; background: none; cursor: pointer;
+  color: #94a3b8; font-size: 11px; font-family: var(--sans);
+  transition: color .15s;
+}
+.mob-tab svg { width: 22px; height: 22px; }
+.mob-tab.active { color: #2563eb; }
+.mob-tab:active { opacity: .7; }
 </style>
 </head>
 <body>
@@ -340,6 +419,8 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover{opacity:1}
           </div>
         </div>
       </div>
+      <!-- Mobile card list -->
+      <div id="mobile-cards"></div>
     </div>
 
     <!-- ── Step 1：建立病人資訊 ── -->
@@ -635,6 +716,13 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover{opacity:1}
 </div><!-- /app -->
 
 <script>
+
+function setMobTab(id){
+  document.querySelectorAll('.mob-tab').forEach(function(t){t.classList.remove('active');});
+  var el=document.getElementById(id);
+  if(el)el.classList.add('active');
+}
+
 const TK=['t1','t2','t3','t4','t5','t6','t7','t8','t9','t10','t11','t12','t13','t14','t15','t16','t17','notes'];
 const TL=['進手術室時間','麻醉完成時間','開始擺位','結束擺位','套臂套開始','套臂套結束','鋪單完成','下刀時間','Trocar完成','Docking開始','Docking結束','Console開始','Console結束','檢體取出','縫合開始','縫合結束','麻醉結束時間','備註'];
 let records=[], curId=null, draftId=null;
@@ -722,7 +810,8 @@ function renderHome(){
     tb.innerHTML='<div class="tbl-empty"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><p>尚無手術紀錄<br>點右上角「建立手術流程資料」新增</p></div>';
     return;
   }
-  tb.innerHTML=records.slice().reverse().map(r=>{
+  const reversed = records.slice().reverse();
+  tb.innerHTML=reversed.map(r=>{
     const ht=r.times&&r.times.some(t=>t&&t!=='');
     const avcls=ht?' teal':'';
     const status=ht
@@ -744,6 +833,43 @@ function renderHome(){
       </div>
     </div>`;
   }).join('');
+  // Mobile cards
+  const mc = document.getElementById('mobile-cards');
+  if(mc){
+    if(!reversed.length){
+      mc.innerHTML='<div class="tbl-empty"><svg viewBox="0 0 24 24" style="width:36px;height:36px;margin:0 auto 10px;display:block;stroke:var(--t3);fill:none;stroke-width:1.5;opacity:.3"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><p>尚無手術紀錄</p></div>';
+    } else {
+      mc.innerHTML=reversed.map(r=>{
+        const ht=r.times&&r.times.some(t=>t&&t!=='');
+        const avcls=ht?' teal':'';
+        const stCls=ht?'spill-done':'spill-wait';
+        const stTxt=ht?'已完成':'待填時間';
+        const stDot=ht?'sdot-done':'sdot-wait';
+        return`<div class="m-card">
+          <div class="m-card-top">
+            <div class="m-av${avcls}">${(r.name||'?')[0]}</div>
+            <div style="flex:1;min-width:0">
+              <div class="m-name">${r.name||'—'}</div>
+              <div style="display:flex;align-items:center;gap:6px;margin-top:3px">
+                <span class="m-date">${r.date||'—'}</span>
+                <span class="dtag ${deptCls(r.dept)}" style="font-size:11px">${r.dept||'—'}</span>
+                <span class="m-status ${stCls}"><span class="sdot ${stDot}"></span>${stTxt}</span>
+              </div>
+            </div>
+          </div>
+          <div class="m-meta">
+            <div style="font-size:12px;color:var(--t2);margin-bottom:2px;width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+              🔬 ${r.surgery||'未填術式'} &nbsp;·&nbsp; 👨‍⚕️ ${r.doctor||'—'}
+            </div>
+          </div>
+          <div class="m-actions">
+            <button class="m-btn-edit" onclick="openEdit(${r.id})">✏️ 編輯</button>
+            <button class="m-btn-del" onclick="delRec(${r.id})">🗑️</button>
+          </div>
+        </div>`;
+      }).join('');
+    }
+  }
 }
 
 /* ── New Step 1 ── */
@@ -1267,5 +1393,21 @@ if(!hadSaved){
 renderHome();
 showView('v-home');
 </script>
+
+<!-- Mobile bottom navigation -->
+<nav id="mobile-bottom-nav" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:300;background:white;border-top:1px solid #e2e8f0;box-shadow:0 -2px 10px rgba(0,0,0,.08)">
+  <button class="mob-tab active" id="mob-sch" onclick="goSch(this);setMobTab('mob-sch')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    手術排程
+  </button>
+  <button class="mob-tab" id="mob-stat" onclick="goStat(this);setMobTab('mob-stat')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="18" y="3" width="4" height="18"/><rect x="10" y="8" width="4" height="13"/><rect x="2" y="13" width="4" height="8"/></svg>
+    統計分析
+  </button>
+  <button class="mob-tab" id="mob-exp" onclick="goExp(this);setMobTab('mob-exp')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    匯出報表
+  </button>
+</nav>
 </body>
 </html>
