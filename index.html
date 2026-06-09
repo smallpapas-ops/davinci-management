@@ -947,8 +947,15 @@ function backS1(){
 }
 function saveNew(){
   const r=records.find(x=>x.id===draftId);if(!r)return;
-  r.times=TK.map(k=>{const el=document.getElementById('t-'+k);return el?el.value:'';});
-  draftId=null;
+  // Explicitly read each time input
+  const savedTimes = [];
+  TK.forEach(k => {
+    const el = document.getElementById('t-' + k);
+    savedTimes.push(el ? (el.value || '') : '');
+  });
+  r.times = savedTimes;
+  console.log('[saveNew] record saved:', r.name, 'times:', r.times.slice(0,5));
+  draftId = null;
   saveToStorage();
   showAlert('s2-alert','✓ 存檔成功！','ok');
   setTimeout(()=>goHome(),1200);
@@ -1010,7 +1017,12 @@ function goEditTimes(){
 }
 function saveEditT(){
   const r=records.find(x=>x.id===curId);if(!r)return;
-  r.times=TK.map(k=>{const el=document.getElementById('et-'+k);return el?el.value:'';});
+  const etTimes = [];
+  TK.forEach(k => {
+    const el = document.getElementById('et-' + k);
+    etTimes.push(el ? (el.value || '') : '');
+  });
+  r.times = etTimes;
   saveToStorage();
   showAlert('et-alert','✓ 時間資料已儲存','ok');
   setTimeout(()=>showEditP(),1100);
@@ -1019,9 +1031,12 @@ function saveEditT(){
 /* ── Detail preview inside edit ── */
 function renderPreview(r){
   const el=document.getElementById('ep-preview');
-  const ts=r.times||[];
-  const tm={};TK.forEach((k,i)=>tm[k]=ts[i]||null);
-  const ht=ts.some(t=>t&&t!=='');
+  const ts = Array.isArray(r.times) ? r.times : [];
+  console.log('[renderPreview]', r.name, 'times[0:3]:', ts.slice(0,3));
+  const tm = {};
+  TK.forEach((k, i) => { tm[k] = (ts[i] && ts[i] !== '') ? ts[i] : null; });
+  const ht = ts.some(t => t && t.trim() !== '');
+  console.log('[renderPreview] ht=', ht, 'tm.t1=', tm.t1);
   if(!ht){
     el.innerHTML=`<div style="text-align:center;padding:16px;color:var(--t3);font-size:13px;background:white;border:1px solid var(--border);border-radius:var(--r12);margin-bottom:14px">
       尚未填寫手術流程時間
