@@ -1614,6 +1614,8 @@ function renderStat(yearFilter){
   imported.forEach(function(r){ BASE_IDS.add(r.id); });
 })();
 // Load from localStorage if available (overrides baseline for edited records)
+// Clear old storage to force reload of latest data
+localStorage.removeItem('davinci_records_v1');
 const hadSaved = loadFromStorage();
 if(!hadSaved){
   // First visit: just use the imported baseline
