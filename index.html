@@ -722,6 +722,35 @@ function setMobTab(id){
   var el=document.getElementById(id);
   if(el)el.classList.add('active');
 }
+const STORAGE_KEY = 'davinci_records_v1';
+
+function saveToStorage(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+    const ind = document.getElementById('storage-indicator');
+    if(ind){ ind.style.display='flex'; setTimeout(()=>{ ind.style.display='none'; }, 2000); }
+  } catch(e){ console.warn('Storage save failed', e); }
+}
+
+function loadFromStorage(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return false;
+    const saved = JSON.parse(raw);
+    if(!Array.isArray(saved) || !saved.length) return false;
+    records.length = 0;
+    saved.forEach(r => records.push(r));
+    return true;
+  } catch(e){ console.warn('Storage load failed', e); return false; }
+}
+
+function clearStorage(){
+  if(!confirm('確定要清除所有本機儲存的資料？\n（將恢復為原始匯入資料）')) return;
+  localStorage.removeItem(STORAGE_KEY);
+  location.reload();
+}
+
+
 
 const TK=['t1','t2','t3','t4','t5','t6','t7','t8','t9','t10','t11','t12','t13','t14','t15','t16','t17','notes'];
 const TL=['進手術室時間','麻醉完成時間','開始擺位','結束擺位','套臂套開始','套臂套結束','鋪單完成','下刀時間','Trocar完成','Docking開始','Docking結束','Console開始','Console結束','檢體取出','縫合開始','縫合結束','麻醉結束時間','備註'];
