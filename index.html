@@ -1123,9 +1123,8 @@ function backS1(){
   setBC('手術排程管理','建立病人資訊');
   showView('v-step1');
 }
-function saveNew(){
+async function saveNew(){
   const r=records.find(x=>x.id===draftId);if(!r)return;
-  // Explicitly read each time input
   const savedTimes = [];
   TK.forEach(k => {
     const el = document.getElementById('t-' + k);
@@ -1134,8 +1133,9 @@ function saveNew(){
   r.times = savedTimes;
   const exitEl=document.getElementById('t-exit');r.exit_time=exitEl?exitEl.value.trim():'';
   draftId = null;
-  saveToStorage(r);
-  showAlert('s2-alert','✓ 存檔成功！','ok');
+  showAlert('s2-alert','⏳ 儲存並同步雲端中…','ok');
+  await saveToStorage(r);
+  showAlert('s2-alert','✓ 已儲存並同步雲端！','ok');
   setTimeout(()=>goHome(),1200);
 }
 
@@ -1176,7 +1176,7 @@ function saveEdit(){
   r.scrub=document.getElementById('ep-scrub').value.trim();
   r.circulating=document.getElementById('ep-circulating').value.trim();
   r.assist=document.getElementById('ep-assist').value.trim();
-  saveToStorage(r);
+  saveToStorage(r); // async - fires and forgets
   document.getElementById('ep-namedp').textContent=r.name;
   document.getElementById('ep-sub').textContent=(r.surgery||'未填術式')+' ／ '+(r.date||'—');
   setBC('手術排程管理','編輯：'+r.name);
@@ -1194,7 +1194,7 @@ function goEditTimes(){
   setBC('手術排程管理','編輯時間：'+r.name);
   showView('v-edit-t');
 }
-function saveEditT(){
+async function saveEditT(){
   const r=records.find(x=>x.id===curId);if(!r)return;
   const etTimes = [];
   TK.forEach(k => {
@@ -1203,9 +1203,10 @@ function saveEditT(){
   });
   r.times = etTimes;
   const etExEl=document.getElementById('et-exit');r.exit_time=etExEl?etExEl.value.trim():r.exit_time||'';
-  saveToStorage(r);
-  showAlert('et-alert','✓ 時間資料已儲存','ok');
-  setTimeout(()=>showEditP(),1100);
+  showAlert('et-alert','⏳ 儲存並同步雲端中…','ok');
+  await saveToStorage(r);
+  showAlert('et-alert','✓ 已儲存並同步雲端','ok');
+  setTimeout(()=>showEditP(),1200);
 }
 
 /* ── Detail preview inside edit ── */
