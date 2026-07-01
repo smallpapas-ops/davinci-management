@@ -1314,16 +1314,53 @@ function renderExpSum(){
   const done=records.filter(r=>r.times&&r.times.some(t=>t&&t!=='')).length;
   document.getElementById('ex-sum').innerHTML=`共 <strong>${records.length}</strong> 筆，已完成 <strong>${done}</strong> 筆，待填 <strong>${records.length-done}</strong> 筆。`;
 
-  // Render turnover table
-  const toPairs = (typeof TURNOVER_DATA !== 'undefined' ? TURNOVER_DATA : [])
-    .filter(function(p){return p.gap_min>=0&&p.gap_min<300;})
-    .sort(function(a,b){return a.date.localeCompare(b.date);});
+  // Recompute turnover from current records (handles Firebase-loaded data)
+  function gm2(t){if(!t)return null;try{const[h,m]=t.split(':').map(Number);return h*60+m;}catch(e){return null;}}
+  const byDate={};
+  records.filter(r=>r.exit_time&&r.times&&r.times[0]&&r.date).forEach(r=>{
+    if(!byDate[r.date])byDate[r.date]=[];
+    byDate[r.date].push(r);
+  });
+  const computedPairs=[];
+  Object.keys(byDate).sort().forEach(date=>{
+    const day=byDate[date].sort((a,b)=>(a.times[0]||'').localeCompare(b.times[0]||''));
+    for(let i=0;i<day.length-1;i++){
+      const p=day[i],n=day[i+1];
+      const ex=gm2(p.exit_time),en=gm2(n.times[0]);
+      if(ex!=null&&en!=null){const gap=en-ex;if(gap>=0&&gap<300)computedPairs.push({date,prev_name:p.name,prev_exit:p.exit_time,next_name:n.name,next_enter:n.times[0],gap_min:gap});}
+    }
+  });
+  // Also include static TURNOVER_DATA for records without exit_time in Firebase
+  const staticPairs=(typeof TURNOVER_DATA!=='undefined'?TURNOVER_DATA:[]).filter(p=>p.gap_min>=0&&p.gap_min<300);
+  // Merge: prefer computed over static (deduplicate by date+prev_name)
+  const seen=new Set(computedPairs.map(p=>p.date+'|'+p.prev_name));
+  const allStaticNew=staticPairs.filter(p=>!seen.has(p.date+'|'+p.prev_name));
+  const toPairs=[...computedPairs,...allStaticNew].sort((a,b)=>a.date.localeCompare(b.date));
+
+  // Recompute utilization from current records
+  const WORK=600;
+  const dailyMap={};
+  records.filter(r=>r.exit_time&&r.times&&r.times[0]&&r.date).forEach(r=>{
+    const en=gm2(r.times[0]),ex=gm2(r.exit_time);
+    if(en&&ex&&ex>en){
+      if(!dailyMap[r.date])dailyMap[r.date]={total_min:0,cases:0};
+      dailyMap[r.date].total_min+=ex-en; dailyMap[r.date].cases++;
+    }
+  });
+  const computedUtil=Object.keys(dailyMap).sort().reverse().map(d=>({date:d,occupied:dailyMap[d].total_min,cases:dailyMap[d].cases,util_pct:Math.round(dailyMap[d].total_min/WORK*1000)/10}));
+  // Use computed if available, else fall back to static UTIL_DATA
+  const utilToUse=computedUtil.length>0?computedUtil:(typeof UTIL_DATA!=='undefined'?UTIL_DATA:[]).slice().sort((a,b)=>b.date.localeCompare(a.date));
+
+  // Store for export functions
+  window._toPairs=toPairs;
+  window._utilData=utilToUse;
+
   const exTurnCnt = document.getElementById('ex-turn-cnt');
   if(exTurnCnt) exTurnCnt.textContent = toPairs.length;
-  console.log('[renderExpSum] turnover pairs:', toPairs.length);
+  console.log('[renderExpSum] computed turnover:', toPairs.length, 'util days:', utilToUse.length);
   const tb = document.getElementById('ex-turn-body');
   if(tb){
-    tb.innerHTML = toPairs.map((p,i)=>{
+    tb.innerHTML = toPairs.length===0?'<tr><td colspan="7" style="padding:16px;text-align:center;color:var(--t3)">尚無銜接時間資料</td></tr>':toPairs.map((p,i)=>{
       const gc = p.gap_min<=15?'var(--green)':p.gap_min<=30?'var(--amber)':'var(--red)';
       const eval_ = p.gap_min<=15?'✅ 良好':p.gap_min<=30?'⚠️ 一般':'🔴 偏長';
       const bg = i%2?'var(--s2)':'white';
@@ -1340,8 +1377,7 @@ function renderExpSum(){
   }
 
   // Render util table
-  const utilAll = (typeof UTIL_DATA !== 'undefined' ? UTIL_DATA : [])
-    .slice().sort((a,b)=>b.date.localeCompare(a.date));
+  const utilAll = utilToUse;
   const exUtilCnt = document.getElementById('ex-util-cnt');
   if(exUtilCnt) exUtilCnt.textContent = utilAll.length;
   const ub = document.getElementById('ex-util-body');
@@ -1362,8 +1398,8 @@ function renderExpSum(){
 }
 
 function exportTurnoverCSV(){
-  const pairs=(typeof TURNOVER_DATA!=='undefined'?TURNOVER_DATA:[]).filter(p=>p.gap_min>=0&&p.gap_min<300).sort((a,b)=>a.date.localeCompare(b.date));
-  if(!pairs.length){alert('無銜接資料');return;}
+  const pairs=window._toPairs||(typeof TURNOVER_DATA!=='undefined'?TURNOVER_DATA:[]).filter(p=>p.gap_min>=0&&p.gap_min<300).sort((a,b)=>a.date.localeCompare(b.date));
+  if(!pairs.length){alert('無銜接資料（請先前往匯出報表頁面）');return;}
   const headers=['日期','前台病人','出室時間','次台病人','進室時間','銜接時間(分)','評估'];
   const rows=pairs.map(p=>{const ev=p.gap_min<=15?'良好':p.gap_min<=30?'一般':'偏長';return[p.date,p.prev_name,p.prev_exit,p.next_name,p.next_enter,p.gap_min,ev];});
   const ws=XLSX.utils.aoa_to_sheet([headers,...rows]);
@@ -1373,8 +1409,8 @@ function exportTurnoverCSV(){
 }
 
 function exportUtilCSV(){
-  const util=(typeof UTIL_DATA!=='undefined'?UTIL_DATA:[]).slice().sort((a,b)=>b.date.localeCompare(a.date));
-  if(!util.length){alert('無使用率資料');return;}
+  const util=window._utilData||(typeof UTIL_DATA!=='undefined'?UTIL_DATA:[]).slice().sort((a,b)=>b.date.localeCompare(a.date));
+  if(!util.length){alert('無使用率資料（請先前往匯出報表頁面）');return;}
   const headers=['日期','手術台數','佔用分鐘','使用率(%)'];
   const rows=util.map(u=>[u.date,u.cases,u.occupied,u.util_pct]);
   const ws=XLSX.utils.aoa_to_sheet([headers,...rows]);
