@@ -372,7 +372,7 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover{opacity:1}
     </button>
   </nav>
   <div class="sb-foot">
-  v6.0 · 114年度
+  v7.0 · 114年度
   <div style="margin-top:8px">
     <button onclick="clearStorage()" style="font-size:10px;color:#64748b;background:none;border:1px solid #334155;border-radius:4px;padding:3px 8px;cursor:pointer;width:100%;font-family:var(--sans)" title="清除本機儲存，恢復原始資料">清除本機資料</button>
   </div>
@@ -1493,9 +1493,9 @@ function renderStat(yearFilter){
     var v=months[k];
     var h=Math.max(Math.round((v/mmax)*160),4);
     var color=barColors[i%barColors.length];
-    var lbl=k.slice(5)+'月';
-    barHtml+='<div class="bar-col"><div class="bar-val">'+v+'</div><div class="bar-fill" style="height:'+h+'px;background:'+color+'"></div></div>';
-    lblHtml+='<div style="flex:1;text-align:center"><span class="bar-lbl">'+lbl+'</span></div>';
+    var lbl=mkeys.length>12?k.slice(2).replace('-','/'):k.slice(5)+'月';
+    barHtml+='<div class="bar-col"><div class="bar-val" style="font-size:'+(mkeys.length>18?'8':'10')+'px">'+v+'</div><div class="bar-fill" style="height:'+h+'px;background:'+color+'"></div></div>';
+    lblHtml+='<div style="flex:1;text-align:center"><span class="bar-lbl" style="font-size:'+(mkeys.length>18?'8':'9')+'px">'+lbl+'</span></div>';
   });
   if(!mkeys.length){barHtml='<div style="color:var(--t3);font-size:12px;padding:20px">無資料</div>';}
   document.getElementById('bar-chart').innerHTML=barHtml;
@@ -1851,7 +1851,10 @@ function renderStat(yearFilter){
     }).join('');
     utHtml += '</div>';
     utHtml += '<div style="display:flex;gap:4px;margin-top:4px">';
-    utHtml += mKeys.map(function(k){return'<div style="flex:1;text-align:center;font-size:9px;color:var(--t3)">'+k.slice(5)+'月</div>';}).join('');
+    utHtml += mKeys.map(function(k){
+      var lbl=mKeys.length>12?k.slice(2).replace('-','/'): k.slice(5)+'月';
+      return'<div style="flex:1;text-align:center;font-size:'+(mKeys.length>18?'8':'9')+'px;color:var(--t3)">'+lbl+'</div>';
+    }).join('');
     utHtml += '</div></div></div>';
 
 
